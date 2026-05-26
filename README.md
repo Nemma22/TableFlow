@@ -1,14 +1,14 @@
-# 🍽️ TableFlow: Enterprise-Grade AI Restaurant Operations & Automation Engine
+# 🍽️ TableFlow: Motor de Operaciones y Automatización para Restaurantes con IA a Nivel Empresarial
 
-TableFlow is an autonomous, production-ready operational management platform designed for modern restaurants. Rather than a simple chatbot, TableFlow is a highly resilient workflow engine that automates customer communication, real-time reservations, intelligent menu search, and database state updates. 
+TableFlow es una plataforma de gestión operativa autónoma y lista para producción diseñada para restaurantes modernos. En lugar de ser un simple chatbot, TableFlow es un motor de flujos de trabajo altamente resiliente que automatiza la comunicación con los clientes, las reservas en tiempo real, la búsqueda semántica en el menú y la actualización del estado de la base de datos.
 
-By leveraging **n8n** for enterprise workflow orchestration, **PostgreSQL (with pgvector)** for semantic search, and an **asynchronous Python embedding synchronization pipeline**, TableFlow keeps menu data and AI-agent representations perfectly synchronized without bottlenecking production APIs.
+Al aprovechar **n8n** para la orquestación de flujos de trabajo empresariales, **PostgreSQL (con pgvector)** para la búsqueda semántica y un **pipeline asíncrono en Python para la sincronización de embeddings**, TableFlow mantiene los datos del menú y las representaciones de los agentes de IA perfectamente actualizados sin sobrecargar las APIs de producción.
 
 ---
 
-## 📈 System Architecture
+## 📈 Arquitectura del Sistema
 
-TableFlow utilizes a decoupled, event-driven architecture to split expensive background operations from real-time customer conversations.
+TableFlow utiliza una arquitectura desacoplada y dirigida por eventos para separar las operaciones costosas en segundo plano de las conversaciones en tiempo real con los clientes.
 
 ```mermaid
 graph TD
@@ -27,7 +27,7 @@ graph TD
     D -->|Trigger de Base de Datos: Insertar/Actualizar| I[Canal de Webhooks en Tiempo Real]
     I -->|Payload JSON del Evento| J[Orquestador de Sincronización en n8n]
     J -->|Ejecución de Worker CLI| K[Script Asíncrono en Python]
-    K -->|Consulta de API de Embeddings (OpenRouter)| L[Generador de Embeddings]
+    K -->|Consulta de API de Embeddings en OpenRouter| L[Generador de Embeddings]
     L -->|Actualizar Columna Vectorial| E
     
     %% Estilos de Alto Contraste y Premium
@@ -45,127 +45,127 @@ graph TD
 
 ---
 
-## 📂 Project Directory Structure
+## 📂 Estructura de Directorios del Proyecto
 
-Your repository is structured as a ready-to-run package:
+El repositorio está estructurado como un paquete listo para ejecutar:
 
 ```text
 TableFlow/
 ├── n8n/
-│   └── tableflow-workflow.json           # Unified production-ready n8n Agent Workflow
+│   └── tableflow-workflow.json           # Flujo de trabajo unificado de Agentes n8n para producción
 ├── python-services/
 │   └── embedding-pipeline/
-│       ├── embed_worker.py               # Asynchronous Python database polling worker
-│       └── requirements.txt              # Script library requirements
-├── docker-compose.yml                    # n8n + ngrok local dev services compose
-├── .env.example                          # Parameterized environment variables template
-└── README.md                             # Production documentation
+│       ├── embed_worker.py               # Script de Python para sondeo y actualización asíncrona de vectores
+│       └── requirements.txt              # Requerimientos de librerías del script
+├── docker-compose.yml                    # Configuración de n8n + ngrok para desarrollo local
+├── .env.example                          # Plantilla de variables de entorno parametrizadas
+└── README.md                             # Documentación técnica en español
 ```
 
 ---
 
-## ⚙️ Core AI Agents Design (n8n Engine)
+## ⚙️ Diseño de los Agentes de IA Principales (Motor n8n)
 
-TableFlow delegates operations to two specialized agentic workflows running inside the unified **n8n** agent model (`n8n/tableflow-workflow.json`), utilizing **Gemini 2.5 Flash Lite** and **GPT-4o-mini** (via **OpenRouter**) for high-speed, cost-effective reasoning.
+TableFlow delega las operaciones a dos flujos de agentes especializados que corren dentro de un modelo unificado en **n8n** (`n8n/tableflow-workflow.json`), utilizando **Gemini 2.5 Flash Lite** y **GPT-4o-mini** (a través de **OpenRouter**) para un razonamiento veloz y rentable.
 
-### 1. Customer Orchestrator Agent (*Agente Orquestador*)
-Orchestrates client-facing interactions over WhatsApp to ensure a human-like, efficient user experience using local Argentine Spanish phrasing (*voseo*).
-*   **Menu Queries:** Uses semantic vector search to answer highly specific questions (e.g., *"Do you have anything low-carb under $15 that doesn't contain peanuts?"*).
-*   **Reservation Lifecycle:** Autonomously verifies seating availability, creates new bookings, allows customers to look up active reservations, or process cancellations via structured database operations.
-*   **Context Management:** Maintains chat memory and persistent conversational context across sessions.
+### 1. Agente Orquestador de Clientes (*Customer Orchestrator*)
+Gestiona las interacciones con los clientes a través de WhatsApp para asegurar una experiencia fluida, rápida y natural, utilizando modismos y voseo argentino local.
+*   **Consultas del Menú:** Realiza búsquedas vectoriales semánticas para responder preguntas específicas (ej. *¿Tienen algo bajo en carbohidratos por menos de $15 que no tenga maní?*).
+*   **Ciclo de Vida de Reservas:** Verifica de forma autónoma la disponibilidad de mesas, crea reservas nuevas, permite a los usuarios consultar sus reservas activas y gestiona cancelaciones directamente en la base de datos de manera estructurada.
+*   **Gestión del Contexto:** Mantiene la memoria del chat y un contexto conversacional persistente entre diferentes sesiones.
 
-### 2. Admin Agent (*Agente Administrador*)
-Empowers restaurant management with conversational backend control.
-*   **Administrative Management:** Creates, overrides, or reschedules bookings based on manual restaurant overrides.
-*   **Menu Modifications:** Handles on-the-fly updates to item pricing, availability, and allergen profiles directly into PostgreSQL, automatically queuing them for vector updates.
+### 2. Agente Administrador (*Admin Agent*)
+Permite al equipo de gestión del restaurante controlar el backend del negocio mediante lenguaje natural.
+*   **Gestión Administrativa:** Crea, anula o reprograma reservas basándose en decisiones operativas directas de los managers.
+*   **Modificaciones del Menú:** Modifica precios, disponibilidad de platos y perfiles de alérgenos directamente en PostgreSQL. Estas modificaciones se guardan con vector nulo, quedando encoladas automáticamente para su posterior vectorización.
 
 ---
 
-## 🧠 High-Performance Semantic Search & pgvector
+## 🧠 Búsqueda Semántica de Alto Rendimiento y pgvector
 
-Rather than relying on basic string matching or raw database scans, TableFlow treats the restaurant menu as a **multi-dimensional vector space**.
+En lugar de depender de búsquedas de texto plano tradicionales o escaneos manuales de la base de datos, TableFlow procesa el menú del restaurante como un **espacio vectorial multidimensional**.
 
-1.  **Menu Vectorization:** Menu items (descriptions, ingredients, categorization, pricing) are serialized into structured textual records and projected into vector space.
-2.  **Cosine Similarity Matching:** User prompts are embedded in real-time and queried against the database using PostgreSQL cosine operators (`<=>`):
+1.  **Vectorización del Menú:** Los platos (nombre, descripción, ingredientes, clasificación y precio) se transforman en representaciones textuales estructuradas y luego se proyectan en el espacio vectorial.
+2.  **Búsqueda por Similitud de Coseno:** Los mensajes de los usuarios se convierten en embeddings en tiempo real y se comparan contra la base de datos utilizando operadores de coseno de PostgreSQL (`<=>`):
     ```sql
     SELECT name, description, price 
     FROM menu 
     ORDER BY embedding <=> CURRENT_QUERY_EMBEDDING 
     LIMIT 3;
     ```
-3.  **Context-Injection:** The top 3 closest items are retrieved and fed to the *Customer Orchestrator Agent* as grounding context, guaranteeing 100% factual responses.
+3.  **Inyección de Contexto:** Los 3 platos más cercanos en similitud semántica se recuperan y se inyectan en el prompt del *Agente Orquestador de Clientes*, asegurando respuestas 100% reales y sin alucinaciones.
 
 ---
 
-## ⚡ Asynchronous Embedding Sync Pipeline (Production Thinking)
+## ⚡ Pipeline Asíncrono de Sincronización de Embeddings (Enfoque de Producción)
 
-A common design flaw in AI projects is generating vector embeddings synchronously during conversational API requests or direct database writes. This causes high API latencies, locks threads, and risks out-of-sync vector records if an API call fails.
+Un error común al diseñar proyectos de IA es generar los embeddings vectoriales de manera síncrona durante las llamadas a la API de conversación o en el momento exacto en que se edita la base de datos. Esto provoca latencias altas en las respuestas de cara al usuario, bloquea hilos de ejecución y puede provocar inconsistencias en los datos si la API externa falla.
 
-### The TableFlow Approach:
-TableFlow decouples database modifications from vector mathematical computations using an event-driven sync pipeline (`python-services/embedding-pipeline/embed_worker.py`):
+### La Solución de TableFlow:
+TableFlow desacopla las modificaciones de la base de datos de los cálculos matemáticos de vectores mediante un pipeline asíncrono y dirigido por eventos (`python-services/embedding-pipeline/embed_worker.py`):
 
-1.  **State Change:** The manager updates a menu row (e.g., changing the price of the *Vegan Salad*).
-2.  **Null Embedding State:** The row is saved with `embedding = NULL`.
-3.  **Asynchronous Script Polling:** The background Python script (`embed_worker.py`) queries the table for rows where `embedding IS NULL` at short intervals:
+1.  **Cambio de Estado:** El administrador actualiza una fila del menú (ej. cambia el precio de la *Ensalada Vegana*).
+2.  **Estado de Vector Nulo:** La fila se guarda en PostgreSQL asignando `embedding = NULL`.
+3.  **Sondeo de Script en Segundo Plano:** Un script en Python (`embed_worker.py`) consulta periódicamente las filas con vector nulo:
     ```sql
     SELECT id, nombre_plato, descripcion, precio, tiempo_preparacion, clasificacion, content
     FROM menu
     WHERE embedding IS NULL
     LIMIT 20;
     ```
-4.  **Generates Vector Representation:** For each null-vector row, the script serializes the data, sends a request to the OpenRouter Embedding API (`openai/text-embedding-3-small`), and writes the vector back in a secure transaction.
-5.  **Zero Interface Blocking:** The customer talking on WhatsApp experiences zero lag or latency, while the AI system's search capabilities update automatically within seconds of a database write.
+4.  **Generación de Embedding:** Por cada fila sin vector, el script serializa sus campos, realiza una llamada a la API de OpenRouter (`openai/text-embedding-3-small`) para calcular el vector y lo escribe de vuelta en una transacción segura.
+5.  **Cero Bloqueo de Interfaz:** El cliente que chatea por WhatsApp experiment en un tiempo de respuesta ultra bajo y constante, mientras que el menú del asistente de IA se sincroniza automáticamente en pocos segundos tras cualquier modificación administrativa.
 
 ---
 
-## 🚀 Quick-Start Guide (Local Deployment)
+## 🚀 Guía de Inicio Rápido (Despliegue Local)
 
-### 1. Spin up the Core Services (Docker & ngrok)
-TableFlow includes a pre-configured `docker-compose.yml` that spawns both `n8n` and an `ngrok` tunnel for secure, HTTPS-accessible webhooks.
+### 1. Iniciar los Servicios de Infraestructura (Docker y ngrok)
+TableFlow incluye una configuración lista en `docker-compose.yml` que levanta tanto `n8n` como un túnel de `ngrok` para exponer webhooks de manera segura mediante HTTPS.
 
-1. Copy `.env.example` to `.env`:
+1. Copia el archivo de plantilla a `.env`:
    ```bash
    cp .env.example .env
    ```
-2. Populate `.env` with your `NGROK_AUTHTOKEN`, `OPENROUTER_API_KEY`, and `DATABASE_URL`.
-3. Spin up the environment:
+2. Completa los campos en `.env` con tus tokens de `NGROK_AUTHTOKEN`, `OPENROUTER_API_KEY` y `DATABASE_URL`.
+3. Inicia los servicios en segundo plano:
    ```bash
    docker-compose up -d
    ```
-4. Access your local n8n instance at `https://macaroni-owl-arise.ngrok-free.dev/` or via port `5678`.
+4. Accede a tu panel local de n8n en `https://macaroni-owl-arise.ngrok-free.dev/` o en el puerto `5678`.
 
-### 2. Configure the n8n Workflow
-1. Go to the n8n dashboard.
-2. Select **Import from File** and upload the `n8n/tableflow-workflow.json` workflow file.
-3. Configure your credentials for PostgreSQL, Supabase, OpenRouter, and the WhatsApp Business API.
+### 2. Configurar el Flujo en n8n
+1. Abre el dashboard de tu n8n local.
+2. Selecciona **Importar desde Archivo** y sube el flujo `n8n/tableflow-workflow.json`.
+3. Configura tus credenciales para PostgreSQL, Supabase, OpenRouter y la API de WhatsApp Business.
 
-### 3. Run the Embedding Sync Worker
-To start processing vector embeddings for new or updated menu items:
-1. Navigate to the pipeline directory:
+### 3. Ejecutar el Script de Sincronización de Vectores
+Para procesar y mantener actualizados los embeddings de los platos nuevos o modificados:
+1. Dirígete a la carpeta del pipeline:
    ```bash
    cd python-services/embedding-pipeline
    ```
-2. Install Python dependencies:
+2. Instala las dependencias de Python necesarias:
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the worker script:
+3. Ejecuta el script del worker:
    ```bash
    python embed_worker.py
    ```
 
 ---
 
-## 💼 Business Value & Return on Investment (ROI)
+## 💼 Valor de Negocio y Retorno de Inversión (ROI)
 
-*   **Operational Resilience:** By offloading booking, scheduling, and repetitive menu inquiries to autonomous agents, staff can focus on guest service.
-*   **Hallucination Protection:** The strict separation of grounding contextual knowledge (via pgvector) prevents the AI from inventing non-existent dishes or incorrect pricing.
-*   **Ultra-low Operational Overhead:** Leveraging Gemini 2.5 Flash Lite through OpenRouter keeps conversational costs to a fraction of a cent per session, providing immense scalability margins.
+*   **Resiliencia Operativa:** Al delegar la gestión de reservas, cancelaciones y consultas repetitivas de la carta a agentes de IA autónomos, el personal del restaurante puede enfocarse exclusivamente en brindar una mejor atención física al cliente.
+*   **Garantía contra Alucinaciones:** El aislamiento estricto de la base de conocimientos (mediante pgvector) impide que la IA invente platos inexistentes o precios desactualizados, protegiendo al restaurante ante problemas de alergias o reclamos comerciales.
+*   **Costos Operativos Mínimos:** Al enrutar las llamadas del agente de clientes mediante Gemini 2.5 Flash Lite en OpenRouter, el costo de procesamiento por chat es de una milésima de centavo, haciendo el sistema extremadamente escalable y rentable.
 
 ---
 
-## 🔮 Future Roadmap
+## 🔮 Próximos Pasos y Roadmap
 
-*   **Advanced Semantic Caching:** Implement a Redis semantic cache to store and instantly serve identical vector queries, cutting API expenses to zero for common requests.
-*   **Stripe Integration:** Allow customers to pay reservation deposits or settle tabs directly through the WhatsApp interface.
-*   **Interactive Voice Responses (IVR):** Transition the conversational logic to handle direct phone calls using Twilio Voice and real-time transcription.
+*   **Caché Semántico Avanzado:** Integrar una caché semántica basada en Redis para almacenar y responder consultas recurrentes de manera inmediata, reduciendo el consumo de APIs a cero para preguntas repetidas.
+*   **Integración con Stripe:** Permitir pagos de señas de reservas o cuentas completas directamente a través de la interfaz de WhatsApp.
+*   **Respuestas de Voz Interactivas (IVR):** Adaptar la lógica conversacional del agente para gestionar llamadas telefónicas mediante Twilio Voice con transcripción en tiempo real.
