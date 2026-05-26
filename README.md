@@ -12,27 +12,35 @@ TableFlow utilizes a decoupled, event-driven architecture to split expensive bac
 
 ```mermaid
 graph TD
-    %% Real-Time WhatsApp Flow
-    A[WhatsApp Customer] <-->|WhatsApp Business API| B[n8n Customer Orchestrator Agent]
-    B <-->|Context & Actions| C{Agent Tooling}
-    C -->|Lookup / Book / Cancel| D[(Supabase PostgreSQL)]
-    C -->|Semantic Menu Search| E[(pgvector Store)]
-    C <-->|OpenRouter / Gemini 2.5 Flash Lite| F[LLM Reasoner]
+    %% Flujo en Tiempo Real de WhatsApp
+    A[Cliente WhatsApp] <-->|API de WhatsApp Business| B[Agente Orquestador de Clientes en n8n]
+    B <-->|Contexto y Acciones| C{Herramientas del Agente}
+    C -->|Consultar / Reservar / Cancelar| D[(PostgreSQL en Supabase)]
+    C -->|Búsqueda Semántica del Menú| E[(Almacén de Vectores pgvector)]
+    C <-->|OpenRouter / Gemini 2.5 Flash Lite| F[Razonador LLM]
 
-    %% Real-Time Admin Operations
-    G[Restaurant Admin / Manager] <-->|n8n Webhook / Dashboard| H[n8n Admin Agent]
-    H <-->|CRUD Operations| D
+    %% Operaciones de Administración en Tiempo Real
+    G[Administrador / Gestor del Restaurante] <-->|Webhook / Dashboard de n8n| H[Agente Administrador en n8n]
+    H <-->|Operaciones CRUD| D
     
-    %% Asynchronous Embedding Sync Pipeline
-    D -->|Supabase Database Trigger: Insert/Update| I[Real-time Webhook Channel]
-    I -->|JSON Event Payload| J[n8n Sync Orchestrator]
-    J -->|Run CLI Worker| K[Python Asynchronous Script]
-    K -->|Query OpenRouter Embedding API| L[Embeddings Generator]
-    L -->|Update Vector Column| E
+    %% Pipeline Asíncrono de Sincronización de Embeddings
+    D -->|Trigger de Base de Datos: Insertar/Actualizar| I[Canal de Webhooks en Tiempo Real]
+    I -->|Payload JSON del Evento| J[Orquestador de Sincronización en n8n]
+    J -->|Ejecución de Worker CLI| K[Script Asíncrono en Python]
+    K -->|Consulta de API de Embeddings (OpenRouter)| L[Generador de Embeddings]
+    L -->|Actualizar Columna Vectorial| E
     
-    style B fill:#f9f,stroke:#333,stroke-width:2px
-    style H fill:#bbf,stroke:#333,stroke-width:2px
-    style K fill:#ff9,stroke:#333,stroke-width:2px
+    %% Estilos de Alto Contraste y Premium
+    classDef default fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc;
+    classDef customerAgent fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#ffffff;
+    classDef adminAgent fill:#1d4ed8,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef pythonScript fill:#b45309,stroke:#f59e0b,stroke-width:2px,color:#ffffff;
+    classDef databaseNode fill:#0f172a,stroke:#334155,stroke-width:2px,color:#f8fafc;
+
+    class B customerAgent;
+    class H adminAgent;
+    class K pythonScript;
+    class D,E databaseNode;
 ```
 
 ---
