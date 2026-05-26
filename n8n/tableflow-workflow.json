@@ -1,0 +1,704 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "id": "4fd4b2da-035e-4500-9c34-588ef36db217",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        0
+      ],
+      "webhookId": "e561f781-ed2e-4d5d-9753-02b9230c2ad2",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "n9mWkmBIv1o4u2Lg",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "99761bd0-3ee8-402c-bc55-6ff1379b1c73",
+              "name": "Chat_id",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "id": "bcbb5935-a835-479a-a3eb-426f5e3dfb81",
+              "name": "mensaje",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "c4312f04-7729-4dc0-a61b-19c9dc24ffe2",
+              "name": "nombre_instancia",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d49c7b39-024e-4039-9ad6-902a3f547034",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "15d015e4-8c09-471b-95e0-9f1c9a027e82",
+              "leftValue": "={{ $json.Chat_id }}",
+              "rightValue": "5491163712214",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0445472d-566f-48d7-ae3e-f7e24dd1aa14",
+      "name": "Verificar Admin",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "Sos el asistente de gestión del gerente del restaurante. Actuás de forma directa y profesional.\n\nPodés ayudarle con:\n- *Menú*:\n  - Para ver el menú: usar la herramienta Leer Menu Admin y MOSTRAR la lista completa o filtrada de platos de forma clara.\n  - Para agregar o modificar platos: usar Modificar Menu y confirmar brevemente la acción realizada.\n- *Reservas*:\n  - Para ver las reservas: usar Leer Reservas Admin y MOSTRAR el listado completo de reservas de forma clara (en formato de tabla o lista ordenada) para el gerente.\n\nREGLAS:\n- Si el usuario te pide listar o ver información (menú o reservas), debes MOSTRAR los resultados obtenidos por la herramienta. Está prohibido solo confirmar que se obtuvo la información sin mostrarla.\n- Confirmá brevemente cada acción de modificación realizada (agregar, modificar). No pedís verificación previa."
+        }
+      },
+      "id": "94abd19b-084d-4143-9ac3-7332153b4896",
+      "name": "Agente Administrador",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}",
+        "tableName": "Chat_admin"
+      },
+      "id": "17f66298-66af-46f9-ac23-8ba6897b6ebd",
+      "name": "Memory Admin",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -48
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "=openai/gpt-4.1-mini",
+        "options": {}
+      },
+      "id": "139e5e66-9f4d-44d4-afce-7612c2ca8d6c",
+      "name": "LLM Admin",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -48
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "eeOrt9rl09qNFbRD",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "Sos el asistente virtual del Restaurante. Atendés clientes por WhatsApp en español argentino (voseo), con tono amigable y profesional.\n\nTU FUNCIÓN:\n- Interpretar la intención del cliente.\n- Ejecutar directamente la herramienta correcta.\n- No delegar en texto, no sugerir, no explicar decisiones.\n\nFLUJO OBLIGATORIO:\n\nMENÚ / PLATOS / PRECIOS / COMIDA:\n→ Usar la herramienta Leer Menu inmediatamente\n\nRESERVAS / TURNOS:\n→ Usar las herramientas Crear Reserva, ver reservas, o Eliminar reservas. Usa Date & Time para interpretar fechas.\n\nREGLAS CRÍTICAS:\n- Nunca expliques qué herramienta o sistema interno estás usando.\n- Nunca devuelvas instrucciones al usuario.\n- Siempre ejecutá la acción directamente.\n- Para negrita en WhatsApp usar SOLO un asterisco de cada lado (*texto*), queda prohibido usar **doble asterisco**.\n\nRESPUESTA AL USUARIO:\n- Solo devolver el resultado final de la herramienta ejecutada.\n- No agregar frases intermedias tipo “claro”, “por favor”, etc.\n- Ser conciso y directo.\n\nFORMATO:\n- Español argentino (voseo)\n- Tono natural, tipo asistente de restaurante real\n- Sin explicaciones del sistema\n\nPERSONALIDAD Y TRATO:\n- Sos la cara visible del restaurante frente a los clientes.\n- Tenés un trato amable, cálido y respetuoso en todo momento.\n- Respondés con cortesía natural, sin ser excesivamente formal ni robótico.\n- Usás un tono humano, cercano y profesional (tipo recepción de restaurante).\n- Mostrás predisposición a ayudar sin ser insistente.\n- Nunca suenes seco, cortante o impaciente.\n- Evitás tecnicismos del sistema o mencionar herramientas internas.\n- Tu objetivo es que el cliente se sienta bien atendido y cómodo para reservar o consultar.\n\nESTILO DE RESPUESTA DEL MENÚ:\n- Siempre iniciar con una frase cálida y natural: \"Acá tenés nuestro menú:\"\n- Mostrar el menú como una carta continua de restaurante.\n- NO dejar líneas en blanco entre platos.\n- Cada plato debe ir en una línea seguida inmediatamente del siguiente.\n- Formato obligatorio por línea:\n\n*Nombre del plato* - $precio\n\nRESPUESTAS CONTEXTUALES (MUY IMPORTANTE):\n\n- Si el cliente hace una pregunta específica sobre un plato (ej: ingredientes, tipo de carne, tiempo de preparación, origen):\n  → NO mostrar el menú completo ni formato de carta\n  → Responder SOLO sobre el plato consultado\n  → Incluir información puntual y directa desde la herramienta\n\n- Si el cliente pregunta por características (ej: \"¿es pollo o carne?\", \"¿cuánto tarda?\"):\n  → Buscar el plato específico con la herramienta\n  → Responder con:\n     - tipo de proteína (si existe)\n     - tiempo de preparación\n     - descripción breve si es necesaria\n\n- Solo usar formato de menú completo cuando el cliente lo pida explícitamente (\"ver menú\", \"qué tienen\", etc.)\n\n- El nombre del plato SIEMPRE en negrita con un solo asterisco (*texto*).\n- No incluir tipo de plato ni tiempo de preparación.\n- No agregar viñetas, guiones extra ni separadores.\n\nCIERRE (OPCIONAL SEGÚN CONTEXTO):\n- \"Si querés, te puedo recomendar algo 😊\"\n- \"Si querés hacer una reserva, te ayudo con eso\"\n- \"Avísame si querés alguna recomendación\""
+        }
+      },
+      "id": "4e494f4e-c7ef-4386-a9f2-11cbccc91fea",
+      "name": "Agente Orquestador",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}",
+        "tableName": "Chats_clientes"
+      },
+      "id": "77b7e5b2-4136-4092-85f2-647d4ad1d93e",
+      "name": "Memory Orquestador",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        560,
+        368
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "id": "fb4e9127-324f-4dea-9730-8e368a60d5e8",
+      "name": "LLM Orquestador",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        400,
+        368
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "eeOrt9rl09qNFbRD",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba9f9346-9627-4abd-bdcc-4fccf4acaaea",
+              "name": "respuesta",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "b5e405b0-fbd3-48c9-88a0-f83061522140",
+              "name": "Chat_id",
+              "value": "={{ $('Extraer Datos').first().json.Chat_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "194ceec7-9771-4ada-b25a-c7b9688a90ac",
+      "name": "Preparar Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1154976547692306",
+        "recipientPhoneNumber": "={{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}",
+        "textBody": "={{ $json.respuesta }}",
+        "additionalFields": {}
+      },
+      "id": "d243e0e1-8666-402e-b953-3379a548d57d",
+      "name": "Send message",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        0
+      ],
+      "webhookId": "56d937ef-5f2b-4e37-916e-12a435649d17",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "TXbwKcLRNn8QiN6h",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "leer_menu",
+        "toolDescription": "Buscá platos del menú por nombre, tipo, precio o descripción. Retorna nombre_plato, tipo_plato, precio_ars y tiempo_preparacion_min.",
+        "tableName": {
+          "__rl": true,
+          "value": "menu",
+          "mode": "list"
+        },
+        "topK": 50,
+        "options": {
+          "queryName": "match_menu"
+        }
+      },
+      "id": "ec4ac75b-0752-4753-a11b-34b1eff8af26",
+      "name": "Leer Menu",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        640,
+        800
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "FSUK03IBRiyJl6si",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "54660fab-db61-40f0-bdee-785660b358c4",
+      "name": "OpenAI Embeddings Menu",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -576,
+        -16
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "aqiyCwLl8nORuLte",
+          "name": "Embedding"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "timezone": "America/Argentina/Buenos_Aires"
+        }
+      },
+      "id": "0d1debcf-8c9a-400e-af14-871bc457d975",
+      "name": "Date & Time",
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        896,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Inserta una reserva nueva en la base de datos. Campos: nombre (TEXT), contacto (TEXT), fecha (TEXT DD/MM/YYYY), hora (TEXT HH:MM), comensales (INTEGER), estado (TEXT por defecto 'Confirmada').",
+        "operation": "executeQuery",
+        "query": "INSERT INTO reservas (\n  nombre_cliente,\n  contacto,\n  cantidad_personas,\n  fecha,\n  hora,\n  estado\n)\nVALUES (\n  '{{ $fromAI(\"nombre_cliente\", \"Nombre del cliente\", \"string\") }}',\n  '{{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}',\n  '{{ $fromAI(\"cantidad_personas\", \"Cantidad de personas (solo número en texto)\", \"string\") }}',\n  '{{ $fromAI(\"fecha\", \"Fecha de la reserva (ej: 24/05/2026)\", \"string\") }}',\n  '{{ $fromAI(\"hora\", \"Hora de la reserva (ej: 20:30)\", \"string\") }}',\n  false\n)\nON CONFLICT (contacto, fecha, hora) DO UPDATE SET\n  nombre_cliente = EXCLUDED.nombre_cliente,\n  cantidad_personas = EXCLUDED.cantidad_personas,\n  estado = EXCLUDED.estado\nRETURNING *;",
+        "options": {}
+      },
+      "id": "6f79f4d0-5c40-4fa7-a177-f8b5bf897c6e",
+      "name": "Crear Reserva",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        816,
+        624
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "leer_menu_admin",
+        "toolDescription": "Utiliza esta herramienta para buscar cosas especificas en el menú",
+        "tableName": {
+          "__rl": true,
+          "value": "menu",
+          "mode": "list",
+          "cachedResultName": "menu"
+        },
+        "topK": 50,
+        "options": {
+          "queryName": "match_menu"
+        }
+      },
+      "id": "fbba9b91-3e3e-460e-92a4-3ab9af6bac3a",
+      "name": "Leer Menu Admin",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        528,
+        -496
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "FSUK03IBRiyJl6si",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Inserta o actualiza un plato en el menú. Columnas: nombre_plato (TEXT), tipo_plato (TEXT, ej: Pasta/Carne/Postre/Bebida/Pizza/Entrada), precio_ars (NUMERIC), tiempo_preparacion_min (INTEGER, opcional).",
+        "operation": "executeQuery",
+        "query": "INSERT INTO menu (\n  nombre_plato,\n  descripcion,\n  precio,\n  tiempo_preparacion,\n  clasificacion,\n  content,\n  metadata,\n  embedding\n)\nVALUES (\n  '{{ $fromAI(\"nombre_plato\", \"Nombre del plato\", \"string\") }}',\n  '{{ $fromAI(\"descripcion\", \"Descripción del plato\", \"string\") }}',\n  '{{ $fromAI(\"precio\", \"Precio del plato\", \"string\") }}',\n  '{{ $fromAI(\"tiempo_preparacion\", \"Tiempo de preparación en formato texto (ej: 20m, 1h)\", \"string\") }}',\n  '{{ $fromAI(\"clasificacion\", \"tipo > categoria > subcategoria > atributos\", \"string\") }}',\n  '{{ $fromAI(\"content\", \"Texto base para embeddings\", \"string\") }}',\n  jsonb_build_object(\n    'nombre_plato', '{{ $fromAI(\"nombre_plato\", \"Nombre del plato\", \"string\") }}',\n    'descripcion', '{{ $fromAI(\"descripcion\", \"Descripción del plato\", \"string\") }}',\n    'precio', '{{ $fromAI(\"precio\", \"Precio del plato\", \"string\") }}',\n    'tiempo_preparacion', '{{ $fromAI(\"tiempo_preparacion\", \"Tiempo de preparación en formato texto (ej: 20m, 1h)\", \"string\") }}',\n    'clasificacion', '{{ $fromAI(\"clasificacion\", \"tipo > categoria > subcategoria > atributos\", \"string\") }}'\n  ),\n  NULL::vector\n)\nON CONFLICT (nombre_plato) DO UPDATE SET\n  descripcion = EXCLUDED.descripcion,\n  precio = EXCLUDED.precio,\n  tiempo_preparacion = EXCLUDED.tiempo_preparacion,\n  clasificacion = EXCLUDED.clasificacion,\n  content = EXCLUDED.content,\n  metadata = EXCLUDED.metadata,\n  embedding = EXCLUDED.embedding\nRETURNING *;",
+        "options": {}
+      },
+      "id": "79a8c00f-2810-4b8d-8f59-953f3b8379fe",
+      "name": "Modificar Menu",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        352,
+        -64
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Lista todas las reservas del restaurante. Podés filtrar por fecha, nombre o estado.",
+        "operation": "executeQuery",
+        "query": "SELECT\n  id,\n  nombre_cliente,\n  contacto,\n  cantidad_personas,\n  fecha,\n  hora,\n  estado\nFROM reservas\nORDER BY fecha ASC, hora ASC;",
+        "options": {}
+      },
+      "id": "7d9776a5-4eeb-4c65-a5f3-26206d4f8f0a",
+      "name": "Leer Reservas Admin",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        704,
+        -48
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Eliminar reservas",
+        "operation": "executeQuery",
+        "query": "UPDATE reservas\nSET estado = false\nWHERE contacto = '{{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}'\nRETURNING *;",
+        "options": {}
+      },
+      "id": "aa745564-d5bc-44d3-ba6d-5b662aeb419e",
+      "name": "Eliminar reservas",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        960,
+        624
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Herramienta para ver/reafirmar/revisar reservas",
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM reservas\nWHERE contacto = '{{ $json.Chat_id.replace(/^549(\\d{2})(\\d{4})(\\d{4})$/, '+54 $1 $2-$3') }}'\nORDER BY fecha ASC, hora ASC;",
+        "options": {}
+      },
+      "id": "2dc5c63f-ea80-4dce-979a-aa5ae6dea39a",
+      "name": "ver reservas",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.4,
+      "position": [
+        672,
+        624
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "pgg9GMPvjcVCN099",
+          "name": "n8n_postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "Verificar Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Admin": {
+      "main": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Administrador": {
+      "main": [
+        [
+          {
+            "node": "Preparar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Admin": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Admin": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Orquestador": {
+      "main": [
+        [
+          {
+            "node": "Preparar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Orquestador": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Orquestador": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings Menu": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Leer Menu",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Leer Menu Admin",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Reserva": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Menu Admin": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modificar Menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Reservas Admin": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Administrador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eliminar reservas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ver reservas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "9e862f68e69b9bf2d712b0108c610161214ee5a6870df229d67f969ae8746c93"
+  }
+}
